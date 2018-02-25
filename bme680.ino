@@ -1,4 +1,7 @@
 // This #include statement was automatically added by the Particle IDE.
+#include <MQTT.h>
+
+// This #include statement was automatically added by the Particle IDE.
 // This #include statement was automatically added by the Particle IDE.
 #include <Adafruit_BME680.h>
 
@@ -18,15 +21,14 @@
   Written by Limor Fried & Kevin Townsend for Adafruit Industries.
   BSD license, all text above must be included in any redistribution
  ***************************************************************************/
-
-#include "Adafruit_BME680.h"
-
 #define BME_SCK 13
 #define BME_MISO 12
 #define BME_MOSI 11
 #define BME_CS 10
-
 #define SEALEVELPRESSURE_HPA (1013.25)
+
+void callback(char* topic, byte* payload, unsigned int length);
+MQTT client("host", 1883,callback);
 
 Adafruit_BME680 bme; // I2C
 //Adafruit_BME680 bme(BME_CS); // hardware SPI
@@ -38,8 +40,11 @@ double pressureHpa = 0;
 double gasResistanceKOhms = 0;
 double approxAltitudeInM = 0;
 
+void callback(char* topic, byte* payload, unsigned int length) {
+  
+}
 void setup() {
-   
+  RGB.brightness(0); // optional to turn off status led on the partcle
   if (!bme.begin(0x76)) {
     Particle.publish("Log", "Could not find a valid BME680 sensor, check wiring!");
   } else {
@@ -57,9 +62,11 @@ void setup() {
     Particle.variable("gas", &gasResistanceKOhms, DOUBLE);
     Particle.variable("altitude", &approxAltitudeInM, DOUBLE);
   }
+  
 }
 
 void loop() {
+  client.connect("ParticlePhoton");    
   if (! bme.performReading()) {
     Particle.publish("Log", "Failed to perform reading :(");
   } else {
@@ -83,10 +90,11 @@ void loop() {
       gasResistanceKOhms,
       approxAltitudeInM);
 
-    Particle.publish("Sensor", data, 60, PRIVATE);
-  
+    //Particle.publish("Sensor 3", data, 60, PRIVATE);
+     if (client.isConnected()) {
+        client.publish("Home/bme680sensor",data);
+    }
   }
   delay(10 * 1000);
 }
-
 
